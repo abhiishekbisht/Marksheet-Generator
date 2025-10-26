@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Marksheet Generator - {{ config.COLLEGE_NAME }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo-section">
+                    <img src="{{ url_for('static', filename='uploads/logo.png') }}" alt="GGI Logo" class="logo" onerror="this.style.display='none'">
+                    <div class="header-text">
+                        <h1>{{ config.COLLEGE_NAME }}</h1>
+                        <p>Academic Excellence Since 1995</p>
+                    </div>
+                </div>
+                
+                <!-- Mobile Menu Button -->
+                <button class="mobile-menu-button" type="button" aria-label="Toggle navigation">
+                    <div class="hamburger">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </button>
+                
+                <nav class="nav-menu">
+                    <a href="{{ url_for('index') }}" class="nav-link active">Generate</a>
+                    <a href="{{ url_for('history') }}" class="nav-link">History</a>
+                    {% if session.role == 'admin' %}
+                        <a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a>
+                    {% endif %}
+                    <a href="{{ url_for('logout') }}" class="nav-link logout">Logout</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="page-header text-center">
+            <h2>Student Marksheet Generator</h2>
+            <p>Generate professional marksheets with custom templates and automated calculations</p>
+        </div>
+
+        <div class="form-container">
+            <form id="marksheetForm" method="POST" action="{{ url_for('generate_marksheet') }}" enctype="multipart/form-data" class="marksheet-form">
+                <div class="form-sections">
+                    <!-- Student Information Section -->
+                    <section class="form-section">
+                        <h3>Student Information</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="student_name">Student Name *</label>
+                                <input type="text" id="student_name" name="student_name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="roll_no">Roll Number *</label>
+                                <input type="text" id="roll_no" name="roll_no" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="branch">Branch *</label>
+                                <select id="branch" name="branch" required>
+                                    <option value="">Select Branch</option>
+                                    <option value="Computer Science Engineering">Computer Science Engineering</option>
+                                    <option value="Information Technology">Information Technology</option>
+                                    <option value="Electronics & Communication">Electronics & Communication</option>
+                                    <option value="Mechanical Engineering">Mechanical Engineering</option>
+                                    <option value="Civil Engineering">Civil Engineering</option>
+                                    <option value="Electrical Engineering">Electrical Engineering</option>
+                                    <option value="Business Administration">Business Administration</option>
+                                    <option value="Commerce">Commerce</option>
+                                    <option value="Arts">Arts</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="semester">Semester *</label>
+                                <select id="semester" name="semester" required>
+                                    <option value="">Select Semester</option>
+                                    <option value="1st Semester">1st Semester</option>
+                                    <option value="2nd Semester">2nd Semester</option>
+                                    <option value="3rd Semester">3rd Semester</option>
+                                    <option value="4th Semester">4th Semester</option>
+                                    <option value="5th Semester">5th Semester</option>
+                                    <option value="6th Semester">6th Semester</option>
+                                    <option value="7th Semester">7th Semester</option>
+                                    <option value="8th Semester">8th Semester</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="exam_type">Exam Type *</label>
+                                <select id="exam_type" name="exam_type" required>
+                                    <option value="">Select Exam Type</option>
+                                    <option value="Mid-Term Examination">Mid-Term Examination</option>
+                                    <option value="Final Examination">Final Examination</option>
+                                    <option value="Semester Examination">Semester Examination</option>
+                                    <option value="Annual Examination">Annual Examination</option>
+                                    <option value="Supplementary Examination">Supplementary Examination</option>
+                                </select>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Subjects and Marks Section -->
+                    <section class="form-section">
+                        <div class="section-header">
+                            <h3>Subjects and Marks</h3>
+                            <div class="section-actions">
+                                <button type="button" id="addSubject" class="btn-secondary">Add Subject</button>
+                                <button type="button" id="toggleExcelUpload" class="btn-primary">📊 Import from Excel</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Excel Upload Section -->
+                        <div id="excelUploadSection" class="excel-upload-section" style="display: none;">
+                            <div class="upload-area">
+                                <div class="upload-header">
+                                    <h4>📋 Import Student Data from Excel</h4>
+                                    <p>Upload an Excel file with student marks data for bulk import</p>
+                                </div>
+                                
+                                <div class="upload-instructions">
+                                    <h5>Excel File Format:</h5>
+                                    <div class="format-example">
+                                        <table class="example-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Student Name</th>
+                                                    <th>Roll Number</th>
+                                                    <th>Branch</th>
+                                                    <th>Semester</th>
+                                                    <th>Exam Type</th>
+                                                    <th>Subject1</th>
+                                                    <th>Subject2</th>
+                                                    <th>Subject3</th>
+                                                    <th>...</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>John Doe</td>
+                                                    <td>2023001</td>
+                                                    <td>Computer Science</td>
+                                                    <td>4th Semester</td>
+                                                    <td>Final Examination</td>
+                                                    <td>85</td>
+                                                    <td>92</td>
+                                                    <td>78</td>
+                                                    <td>...</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="format-notes">
+                                        <p><strong>Note:</strong></p>
+                                        <ul>
+                                            <li>First 5 columns must be: Student Name, Roll Number, Branch, Semester, Exam Type</li>
+                                            <li>Following columns should contain subject names as headers and marks as values</li>
+                                            <li>Maximum marks will be assumed as 100 (you can modify after import)</li>
+                                            <li>Supported formats: .xlsx, .xls</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <div class="file-upload-area">
+                                    <input type="file" id="excelFile" accept=".xlsx,.xls" style="display: none;">
+                                    <div class="upload-dropzone" onclick="document.getElementById('excelFile').click();">
+                                        <div class="upload-icon">📁</div>
+                                        <p class="upload-text">Click to select Excel file or drag and drop</p>
+                                        <p class="upload-subtext">Supports .xlsx and .xls files</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="upload-actions">
+                                    <button type="button" id="importExcel" class="btn-primary" disabled>Import Data</button>
+                                    <button type="button" id="downloadTemplate" class="btn-secondary">Download Template</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="subjectsContainer">
+                            <div class="subject-row">
+                                <div class="form-group">
+                                    <label>Subject Name *</label>
+                                    <input type="text" name="subject_name[]" required placeholder="e.g., Mathematics">
+                                </div>
+                                <div class="form-group">
+                                    <label>Marks Obtained *</label>
+                                    <input type="number" name="marks[]" min="0" max="100" required class="marks-input">
+                                </div>
+                                <div class="form-group">
+                                    <label>Maximum Marks *</label>
+                                    <input type="number" name="max_marks[]" min="1" value="100" required class="max-marks-input">
+                                </div>
+                                <div class="form-group">
+                                    <button type="button" class="remove-subject" onclick="removeSubject(this)">Remove</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="marks-summary">
+                            <div class="summary-item">
+                                <label>Total Marks:</label>
+                                <span id="totalMarks">0</span> / <span id="totalMaxMarks">0</span>
+                            </div>
+                            <div class="summary-item">
+                                <label>Percentage:</label>
+                                <span id="percentage">0.00%</span>
+                            </div>
+                            <div class="summary-item">
+                                <label>Grade:</label>
+                                <span id="grade">-</span>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <div class="btn-container">
+                    <button type="button" id="resetForm" class="btn-secondary">Reset Form</button>
+                    <button type="submit" class="btn-primary">Generate Marksheet</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 {{ config.COLLEGE_NAME }}. All rights reserved.</p>
+            <p>Marksheet Management System v1.0</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

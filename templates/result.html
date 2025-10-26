@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marksheet - {{ student.name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* ===== RESET & BASE STYLES ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #1e293b;
+            background: #f5f5f5;
+        }
+        
+        /* ===== LAYOUT CONTAINER ===== */
+        .marksheet-container {
+            padding: 15px;
+        }
+        
+        .marksheet {
+            max-width: 210mm; /* A4 width */
+            margin: 0 auto;
+            padding: 15px;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        /* ===== HEADER SECTION ===== */
+        .marksheet-header {
+            text-align: center;
+            margin-bottom: 12px;
+            border-bottom: 2px solid #2563eb;
+            padding-bottom: 12px;
+        }
+        
+        .college-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .college-logo {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            border: 3px solid #2563eb;
+            object-fit: cover;
+            background: white;
+        }
+        
+        .college-details h1 {
+            font-size: 20px;
+            color: #2563eb;
+            font-weight: bold;
+            margin-bottom: 3px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .college-subtitle {
+            font-size: 11px;
+            color: #64748b;
+            font-style: italic;
+            margin-bottom: 8px;
+        }
+        
+        .marksheet-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #000;
+            margin-bottom: 3px;
+            letter-spacing: 0.5px;
+        }
+        
+        .exam-type {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 500;
+        }
+        
+        /* ===== STUDENT DETAILS SECTION ===== */
+        .student-details {
+            margin-bottom: 12px;
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .detail-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .detail-item {
+            flex: 1;
+            display: flex;
+            align-items: center;
+        }
+        
+        .detail-item .label {
+            font-weight: 800;
+            color: #000;
+            min-width: 100px;
+            margin-right: 8px;
+            font-size: 13px;
+        }
+        
+        .detail-item .value {
+            color: #000;
+            font-weight: 700;
+            font-size: 13px;
+        }
+        
+        /* ===== MARKS TABLE ===== */
+        .marks-table-container {
+            margin-bottom: 12px;
+            overflow-x: auto;
+            width: 100%;
+        }
+        
+        .marks-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            table-layout: fixed;
+            background: white;
+            font-size: 11px;
+            border: 2px solid #2563eb;
+        }
+        
+        .marks-table th {
+            background: #93c5fd;
+            color: #000;
+            padding: 10px 8px;
+            text-align: center;
+            font-weight: 800;
+            font-size: 12px;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+            border-bottom: 2px solid #1e40af;
+            vertical-align: middle;
+            border: 2px solid #1e40af;
+        }
+        
+        .marks-table td {
+            padding: 10px 8px;
+            text-align: center;
+            border-bottom: 1px solid #94a3b8;
+            font-size: 13px;
+            font-weight: 700;
+            word-wrap: break-word;
+            vertical-align: middle;
+            line-height: 1.4;
+            color: #000 !important;
+            border: 1px solid #cbd5e1;
+        }
+        
+        /* Force all tbody cells to be black */
+        .marks-table tbody td {
+            color: #000 !important;
+            font-weight: 700 !important;
+        }
+        
+        /* Ensure marks and grades are visible */
+        .marks-table td:nth-child(3),
+        .marks-table td:nth-child(4),
+        .marks-table td:nth-child(5) {
+            color: #000 !important;
+            font-weight: 800 !important;
+            font-size: 14px !important;
+        }
+        
+        /* Extra emphasis on marks obtained column */
+        .marks-table td:nth-child(3) {
+            color: #000 !important;
+            font-weight: 900 !important;
+        }
+        
+        /* Column width optimization for 5 subjects - cleaner layout */
+        .marks-table th:nth-child(1), .marks-table td:nth-child(1) { width: 8%; }   /* S.No */
+        .marks-table th:nth-child(2), .marks-table td:nth-child(2) { 
+            width: 38%; 
+            text-align: left; 
+            padding-left: 15px; 
+            font-weight: 700;
+            word-break: break-word;
+            white-space: normal;
+            color: #000 !important;
+        }  /* Subject */
+        .marks-table th:nth-child(3), .marks-table td:nth-child(3) { 
+            width: 18%;
+            color: #000 !important;
+            font-weight: 900 !important;
+        }  /* Marks Obtained */
+        .marks-table th:nth-child(4), .marks-table td:nth-child(4) { 
+            width: 18%;
+            color: #000 !important;
+        }  /* Maximum Marks */
+        .marks-table th:nth-child(5), .marks-table td:nth-child(5) { 
+            width: 18%;
+            color: #000 !important;
+        }  /* Grade */
+        
+        .marks-table tbody tr:nth-child(even) {
+            background: #f8fafc;
+        }
+        
+        .total-row {
+            background: linear-gradient(135deg, #1e40af, #1d4ed8) !important;
+            color: white !important;
+            font-weight: 800 !important;
+            border-top: 3px solid #1e3a8a !important;
+        }
+        
+        .total-row td {
+            border-bottom: none !important;
+            padding: 12px 8px !important;
+            font-size: 14px !important;
+            font-weight: 800 !important;
+            color: white !important;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+            text-align: center !important;
+        }
+        
+        /* TOTAL text left-aligned */
+        .total-row td:first-child {
+            text-align: left !important;
+            padding-left: 15px !important;
+        }
+        
+        /* Numbers in TOTAL row centered */
+        .total-row td:nth-child(2),
+        .total-row td:nth-child(3),
+        .total-row td:nth-child(4) {
+            text-align: center !important;
+        }
+        
+        .total-row td strong {
+            color: white !important;
+            font-weight: 900 !important;
+        }
+        
+        .total-row .grade-a,
+        .total-row .grade-aplus,
+        .total-row .grade-b,
+        .total-row .grade-bplus,
+        .total-row .grade-c,
+        .total-row .grade-d,
+        .total-row .grade-f {
+            color: white !important;
+        }
+        
+        /* ===== GRADE COLORS ===== */
+        .grade-a, .grade-aplus { color: #000; font-weight: 800; }
+        .grade-b, .grade-bplus { color: #000; font-weight: 800; }
+        .grade-c { color: #000; font-weight: 800; }
+        .grade-d { color: #000; font-weight: 800; }
+        .grade-f { color: #000; font-weight: 800; }
+        
+        /* Force all grade classes to be black everywhere */
+        td[class*="grade-"],
+        span[class*="grade-"],
+        div[class*="grade-"] {
+            color: #000 !important;
+            font-weight: 800 !important;
+            background: transparent !important;
+        }
+        
+        .total-row .grade-a,
+        .total-row .grade-aplus,
+        .total-row .grade-b,
+        .total-row .grade-bplus,
+        .total-row .grade-c,
+        .total-row .grade-d,
+        .total-row .grade-f {
+            color: white !important;
+        }
+        
+        /* ===== RESULT SUMMARY ===== */
+        .result-summary {
+            margin-bottom: 15px;
+        }
+        
+        .summary-box {
+            background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+            border: 2px solid #0284c7;
+            border-radius: 6px;
+            padding: 15px;
+            box-shadow: 0 2px 6px rgba(2, 132, 199, 0.1);
+        }
+        
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            padding: 3px 0;
+        }
+        
+        .summary-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .summary-item.full-width {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+            margin-top: 6px;
+            padding-top: 6px;
+            border-top: 1px solid rgba(2, 132, 199, 0.2);
+        }
+        
+        .summary-label {
+            font-weight: 800;
+            color: #000;
+            font-size: 13px;
+        }
+        
+        .summary-value {
+            font-weight: 700;
+            color: #000;
+            font-size: 13px;
+        }
+        
+        .percentage {
+            font-size: 16px;
+            color: #059669;
+            font-weight: 800;
+        }
+        
+        /* Ensure all grade values are black */
+        .summary-value[class*="grade-"] {
+            color: #000 !important;
+            font-weight: 800 !important;
+        }
+        
+        .remarks {
+            font-style: italic;
+            color: #4b5563;
+            font-size: 12px;
+            line-height: 1.3;
+        }
+        
+        /* ===== SIGNATURES & SEAL ===== */
+        .signatures {
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 20px;
+            padding: 15px 0;
+            border-top: 2px solid #e2e8f0;
+        }
+        
+        .signature-section {
+            flex: 1;
+            display: flex;
+            justify-content: space-around;
+            gap: 40px;
+        }
+        
+        .signature-box {
+            text-align: center;
+            min-width: 120px;
+        }
+        
+        .signature-image {
+            width: 100px;
+            height: 50px;
+            object-fit: contain;
+            background: transparent;
+            margin-bottom: 6px;
+            border: 1px solid #e2e8f0;
+            border-radius: 3px;
+            padding: 3px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            mix-blend-mode: multiply; /* Removes white background from PNG */
+        }
+        
+        .signature-image:hover {
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+            transform: translateY(-1px);
+            transition: all 0.2s ease;
+        }
+        
+        .signature-label {
+            font-weight: 600;
+            color: #374151;
+            font-size: 11px;
+            margin-top: 3px;
+            text-align: center;
+        }
+        
+        .seal-section {
+            flex: 0 0 120px;
+            text-align: center;
+        }
+        
+        .seal-image {
+            width: 90px;
+            height: 90px;
+            border: 3px solid #2563eb;
+            border-radius: 50%;
+            object-fit: contain;
+            background: white;
+            padding: 3px;
+            box-shadow: 0 3px 8px rgba(37, 99, 235, 0.2);
+            mix-blend-mode: multiply; /* Removes white background from PNG */
+        }
+        
+        .seal-image:hover {
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            transform: scale(1.02);
+            transition: all 0.2s ease;
+        }
+        
+        .seal-label {
+            font-weight: 600;
+            color: #374151;
+            font-size: 11px;
+            margin-top: 5px;
+            text-align: center;
+        }
+        
+        /* ===== ACTION BUTTONS ===== */
+        .print-actions {
+            text-align: center;
+            margin: 15px 0;
+            padding: 15px;
+        }
+        
+        .print-actions .print-btn,
+        .print-actions .download-btn,
+        .print-actions .back-btn {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 0 8px;
+            transition: background 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .print-actions .download-btn,
+        .print-actions .back-btn {
+            background: #64748b;
+        }
+        
+        .print-actions .print-btn:hover {
+            background: #1d4ed8;
+        }
+        
+        .print-actions .download-btn:hover,
+        .print-actions .back-btn:hover {
+            background: #475569;
+        }
+        
+        /* ===== VERIFICATION SECTION ===== */
+        .verification {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 12px;
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        
+        .verification-info {
+            text-align: center;
+        }
+        
+        .verification-info p {
+            margin-bottom: 4px;
+            font-size: 12px;
+            color: #4b5563;
+        }
+        
+        .verification-info p:first-child {
+            font-weight: 700;
+            color: #1e293b;
+            font-size: 13px;
+        }
+        
+        /* ===== ACTION BUTTONS ===== */
+        .print-actions {
+            text-align: center;
+            margin: 15px 0;
+            padding: 15px;
+        }
+        
+        .print-btn, .download-btn, .back-btn {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 0 8px;
+            transition: background 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .download-btn {
+            background: #059669;
+        }
+        
+        .back-btn {
+            background: #64748b;
+        }
+        
+        .print-btn:hover {
+            background: #1d4ed8;
+        }
+        
+        .download-btn:hover {
+            background: #047857;
+        }
+        
+        .back-btn:hover {
+            background: #475569;
+        }
+        
+        /* ===== PRINT STYLES ===== */
+        @media print {
+            @page { 
+                size: A4 portrait; 
+                margin: 8mm; 
+            }
+            
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            body {
+                margin: 0;
+                padding: 0;
+                font-size: 9pt;
+                background: white !important;
+                color: black !important;
+            }
+            
+            .marksheet-container {
+                padding: 0;
+                max-height: none;
+                overflow: visible;
+            }
+            
+            .marksheet {
+                box-shadow: none !important;
+                border: none !important;
+                width: 100% !important;
+                max-width: none !important;
+                margin: 0 !important;
+                page-break-inside: avoid;
+                background: white !important;
+                padding: 8px;
+                font-size: 9pt;
+                max-height: none !important;
+                height: auto !important;
+                border-radius: 0 !important;
+            }
+            
+            .no-print {
+                display: none !important;
+            }
+            
+            /* Header optimization */
+            .marksheet-header {
+                margin-bottom: 8px;
+                padding-bottom: 8px;
+            }
+            
+            .college-info {
+                gap: 8px;
+                margin-bottom: 6px;
+            }
+            
+            .college-logo {
+                width: 45px !important;
+                height: 45px !important;
+                border: 3px solid #2563eb !important;
+            }
+            
+            .college-details h1 {
+                font-size: 16px !important;
+                color: #2563eb !important;
+            }
+            
+            .college-subtitle {
+                font-size: 9px !important;
+                margin-bottom: 5px !important;
+            }
+            
+            .marksheet-title {
+                font-size: 14px !important;
+                margin-bottom: 2px !important;
+            }
+            
+            .exam-type {
+                font-size: 10px !important;
+            }
+            
+            /* Student details optimization */
+            .student-details {
+                margin-bottom: 8px !important;
+                padding: 8px !important;
+            }
+            
+            .detail-row {
+                margin-bottom: 5px !important;
+            }
+            
+            .detail-item .label,
+            .detail-item .value {
+                font-size: 10pt !important;
+                color: #000 !important;
+                font-weight: 700 !important;
+            }
+            
+            /* Table print optimization */
+            .marks-table-container {
+                margin-bottom: 8px !important;
+                width: 100% !important;
+            }
+            
+            .marks-table {
+                border: 2px solid #2563eb !important;
+                font-size: 9pt !important;
+                page-break-inside: avoid;
+                width: 100% !important;
+            }
+            
+            .marks-table th {
+                background: #93c5fd !important;
+                color: #000 !important;
+                border-bottom: 2px solid #1e40af !important;
+                border: 2px solid #1e40af !important;
+                padding: 6px 4px !important;
+                font-size: 9pt !important;
+                font-weight: 800 !important;
+            }
+            
+            .marks-table td {
+                padding: 5px 4px !important;
+                font-size: 9pt !important;
+                border-bottom: 1px solid #94a3b8 !important;
+                border: 1px solid #cbd5e1 !important;
+                word-break: break-word !important;
+                white-space: normal !important;
+                color: #000 !important;
+                font-weight: 700 !important;
+            }
+            
+            /* Force all tbody and tfoot cells to be black in print */
+            .marks-table tbody td,
+            .marks-table tfoot td {
+                color: #000 !important;
+                font-weight: 700 !important;
+            }
+            
+            .marks-table td:nth-child(3),
+            .marks-table td:nth-child(4),
+            .marks-table td:nth-child(5) {
+                color: #000 !important;
+                font-weight: 800 !important;
+                font-size: 10pt !important;
+            }
+            
+            /* Extra emphasis on marks obtained in print */
+            .marks-table td:nth-child(3) {
+                color: #000 !important;
+                font-weight: 900 !important;
+            }
+            
+            .marks-table th:nth-child(2), 
+            .marks-table td:nth-child(2) {
+                text-align: left !important;
+                padding-left: 10px !important;
+                color: #000 !important;
+                font-weight: 700 !important;
+            }
+            
+            .marks-table td:nth-child(3) {
+                color: #000 !important;
+                font-weight: 900 !important;
+            }
+            
+            .marks-table td:nth-child(4),
+            .marks-table td:nth-child(5) {
+                color: #000 !important;
+                font-weight: 700 !important;
+            }
+            
+            .total-row {
+                background: #1e40af !important;
+                color: white !important;
+                border-top: 3px solid #1e3a8a !important;
+            }
+            
+            .total-row td {
+                font-weight: 900 !important;
+                padding: 8px 4px !important;
+                font-size: 10pt !important;
+                color: white !important;
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4) !important;
+                text-align: center !important;
+            }
+            
+            /* TOTAL text left-aligned in print */
+            .total-row td:first-child {
+                text-align: left !important;
+                padding-left: 10px !important;
+            }
+            
+            .total-row td strong {
+                color: white !important;
+                font-weight: 900 !important;
+            }
+            
+            .total-row .grade-a,
+            .total-row .grade-aplus,
+            .total-row .grade-b,
+            .total-row .grade-bplus,
+            .total-row .grade-c,
+            .total-row .grade-d,
+            .total-row .grade-f {
+                color: white !important;
+            }
+            
+            /* Result summary optimization */
+            .result-summary {
+                margin-bottom: 8px !important;
+            }
+            
+            .summary-box {
+                background: linear-gradient(135deg, #f0f9ff, #e0f2fe) !important;
+                border: 2px solid #0284c7 !important;
+                page-break-inside: avoid;
+                padding: 8px !important;
+            }
+            
+            .summary-item {
+                margin-bottom: 3px !important;
+            }
+            
+            .summary-label,
+            .summary-value {
+                font-size: 10pt !important;
+                color: #000 !important;
+                font-weight: 700 !important;
+            }
+            
+            .percentage {
+                font-size: 12pt !important;
+                color: #000 !important;
+                font-weight: 800 !important;
+            }
+            
+            .remarks {
+                font-size: 9pt !important;
+                color: #000 !important;
+                font-weight: 600 !important;
+            }
+            
+            /* Force all grades to black in print */
+            td[class*="grade-"],
+            span[class*="grade-"],
+            div[class*="grade-"],
+            .grade-a, .grade-aplus, .grade-b, .grade-bplus, .grade-c, .grade-d, .grade-f {
+                color: #000 !important;
+                font-weight: 800 !important;
+                background: transparent !important;
+            }
+        }
+        
+        /* ===== RESPONSIVE DESIGN ===== */
+        @media (max-width: 768px) {
+            .marksheet {
+                padding: 20px 15px;
+            }
+            
+            .college-info {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .college-logo {
+                width: 55px;
+                height: 55px;
+            }
+            
+            .detail-row {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .detail-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .marks-table th,
+            .marks-table td {
+                padding: 8px 4px;
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="print-actions no-print">
+        <button onclick="window.print()" class="print-btn">🖨️ Print Marksheet</button>
+        <button onclick="savePDF()" class="download-btn">💾 Save as PDF</button>
+        <a href="{{ url_for('index') }}" class="back-btn">← Back to Generate</a>
+    </div>
+
+    <div class="marksheet-container">
+        <div class="marksheet" id="marksheet">
+            <div class="marksheet-header">
+                <div class="college-info">
+                    <img src="{{ url_for('static', filename='uploads/logo.png') }}" alt="College Logo" class="college-logo" onerror="this.style.display='none'">
+                    <div class="college-details">
+                        <h1>{{ config.COLLEGE_NAME }}</h1>
+                        <p class="college-subtitle">{{ config.COLLEGE_ADDRESS }}</p>
+                    </div>
+                </div>
+                <h2 class="marksheet-title">ACADEMIC MARKSHEET</h2>
+                <p class="exam-type">{{ student.exam_type }}</p>
+            </div>
+
+            <div class="student-details">
+                <div class="detail-row">
+                    <div class="detail-item">
+                        <span class="label">Student Name:</span>
+                        <span class="value">{{ student.name }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Roll Number:</span>
+                        <span class="value">{{ student.roll_no }}</span>
+                    </div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-item">
+                        <span class="label">Branch:</span>
+                        <span class="value">{{ student.branch }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Semester:</span>
+                        <span class="value">{{ student.semester }}</span>
+                    </div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-item">
+                        <span class="label">Exam Type:</span>
+                        <span class="value">{{ student.exam_type }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Result Date:</span>
+                        <span class="value">{{ student.date }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="marks-table-container">
+                <table class="marks-table">
+                    <thead>
+                        <tr>
+                            <th>S.No.</th>
+                            <th>Subject</th>
+                            <th>Marks Obtained</th>
+                            <th>Maximum Marks</th>
+                            <th>Grade</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for subject in subjects %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ subject.name }}</td>
+                            <td>{{ subject.marks }}</td>
+                            <td>{{ subject.max_marks }}</td>
+                            <td class="grade-{{ subject.grade|lower|replace('+', 'plus') }}">{{ subject.grade }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="total-row">
+                            <td colspan="2"><strong>TOTAL</strong></td>
+                            <td><strong>{{ student.total_marks }}</strong></td>
+                            <td><strong>{{ student.max_marks }}</strong></td>
+                            <td class="grade-{{ student.grade|lower|replace('+', 'plus') }}"><strong>{{ student.grade }}</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="result-summary">
+                <div class="summary-box">
+                    <div class="summary-item">
+                        <span class="summary-label">Total Marks:</span>
+                        <span class="summary-value">{{ student.total_marks }} / {{ student.max_marks }}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Percentage:</span>
+                        <span class="summary-value percentage">{{ "%.2f"|format(student.percentage) }}%</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Overall Grade:</span>
+                        <span class="summary-value grade-{{ student.grade|lower|replace('+', 'plus') }}">{{ student.grade }}</span>
+                    </div>
+                    <div class="summary-item full-width">
+                        <span class="summary-label">Remarks:</span>
+                        <span class="summary-value remarks">{{ student.remarks }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function savePDF() {
+            // Modern browsers support saving as PDF directly from print dialog
+            if (window.print) {
+                window.print();
+            } else {
+                alert('Please use your browser\'s print function and select "Save as PDF" as the destination.');
+            }
+        }
+        
+        // Auto-focus for better printing experience
+        window.addEventListener('load', function() {
+            // Check if opened for printing (from URL parameter)
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('print') === 'true') {
+                setTimeout(() => window.print(), 500);
+            }
+        });
+    </script>
+</body>
+</html>

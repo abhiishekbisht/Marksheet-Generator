@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Result History - {{ config.COLLEGE_NAME }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo-section">
+                    <img src="{{ url_for('static', filename='uploads/logo.png') }}" alt="GGI Logo" class="logo" onerror="this.style.display='none'">
+                    <div class="header-text">
+                        <h1>{{ config.COLLEGE_NAME }}</h1>
+                        <p>Academic Excellence Since 1995</p>
+                    </div>
+                </div>
+                
+                <!-- Mobile Menu Button -->
+                <button class="mobile-menu-button" type="button" aria-label="Toggle navigation">
+                    <div class="hamburger">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </button>
+                
+                <nav class="nav-menu">
+                    <a href="{{ url_for('index') }}" class="nav-link">Generate</a>
+                    <a href="{{ url_for('history') }}" class="nav-link active">History</a>
+                    {% if session.role == 'admin' %}
+                        <a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a>
+                    {% endif %}
+                    <a href="{{ url_for('logout') }}" class="nav-link logout">Logout</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="page-header text-center">
+            <h2>Result History</h2>
+            <p>Search and view previously generated marksheets</p>
+        </div>
+
+        <div class="form-container">
+            <!-- Search Section -->
+            <section class="form-section">
+                <h3>Search Records</h3>
+                <form method="GET" class="search-form">
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 1;">
+                            <label for="search">Search by student name or roll number</label>
+                            <input type="text" 
+                                   id="search"
+                                   name="search" 
+                                   placeholder="Enter student name or roll number..." 
+                                   value="{{ search_query }}"
+                                   class="search-input">
+                        </div>
+                    </div>
+                    <div class="section-actions">
+                        <button type="submit" class="btn-primary">🔍 Search</button>
+                        {% if search_query %}
+                            <a href="{{ url_for('history') }}" class="btn-secondary">Clear Search</a>
+                        {% endif %}
+                    </div>
+                </form>
+            </section>
+
+            <!-- Results Section -->
+            <section class="form-section">
+                <div class="section-header">
+                    <h3>
+                        {% if search_query %}
+                            📊 Search Results for "{{ search_query }}"
+                        {% else %}
+                            📄 Recent Marksheets
+                        {% endif %}
+                    </h3>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        {% if students %}
+                            <span class="results-count">{{ students|length }} records found</span>
+                        {% endif %}
+                        {% if session.role == 'admin' and students %}
+                            <button onclick="clearAllData()" class="btn-danger" style="padding: 8px 16px; font-size: 14px;">
+                                🗑️ Clear All Data
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if students %}
+                    <div class="history-grid">
+                        {% for student in students %}
+                        <div class="history-card">
+                            <div class="card-header">
+                                <h4>{{ student.name }}</h4>
+                                <div class="grade-badge grade-{{ student.grade.lower().replace('+', 'plus') }}">
+                                    {{ student.grade }}
+                                </div>
+                            </div>
+                            
+                            <div class="card-content">
+                                <div class="student-info">
+                                    <div class="info-item">
+                                        <span class="label">Roll No:</span>
+                                        <span class="value">{{ student.roll_no }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="label">Branch:</span>
+                                        <span class="value">{{ student.branch }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="label">Semester:</span>
+                                        <span class="value">{{ student.semester }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="label">Exam Type:</span>
+                                        <span class="value">{{ student.exam_type }}</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="performance-summary">
+                                    <div class="perf-item">
+                                        <span class="perf-label">Marks:</span>
+                                        <span class="perf-value">{{ student.total_marks }}/{{ student.max_marks }}</span>
+                                    </div>
+                                    <div class="perf-item">
+                                        <span class="perf-label">Percentage:</span>
+                                        <span class="perf-value percentage">{{ student.percentage }}%</span>
+                                    </div>
+                                    <div class="perf-item">
+                                        <span class="perf-label">Generated:</span>
+                                        <span class="perf-value">{{ student.date_created.strftime('%b %d, %Y') }}</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="remarks">
+                                    <p>{{ student.remarks }}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="card-actions">
+                                <a href="{{ url_for('verify_result', student_id=student.id) }}" 
+                                   class="btn-primary" target="_blank">📄 View Result</a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="no-results">
+                        <div class="no-results-content">
+                            <div class="no-results-icon">📄</div>
+                            <h3>
+                                {% if search_query %}
+                                    No results found for "{{ search_query }}"
+                                {% else %}
+                                    No marksheets generated yet
+                                {% endif %}
+                            </h3>
+                            <p>
+                                {% if search_query %}
+                                    Try searching with a different term or check the spelling.
+                                {% else %}
+                                    Start by generating your first marksheet.
+                                {% endif %}
+                            </p>
+                            <div class="btn-container">
+                                <a href="{{ url_for('index') }}" class="btn-primary">📝 Generate Marksheet</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </section>
+
+            <!-- Quick Stats Section -->
+            {% if students %}
+            <section class="form-section">
+                <h3>📊 Quick Statistics</h3>
+                <div class="stats-row">
+                    <div class="stat-item">
+                        <span class="stat-number">{{ students|length }}</span>
+                        <span class="stat-label">Records Shown</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">
+                            {{ students|selectattr('grade', '!=', 'F')|list|length }}
+                        </span>
+                        <span class="stat-label">Passed</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">
+                            {{ students|selectattr('grade', '==', 'F')|list|length }}
+                        </span>
+                        <span class="stat-label">Failed</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">
+                            {% set avg_perc = students|map(attribute='percentage')|sum / students|length %}
+                            {{ "%.1f"|format(avg_perc) }}%
+                        </span>
+                        <span class="stat-label">Avg Percentage</span>
+                    </div>
+                </div>
+            </section>
+            {% endif %}
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 {{ config.COLLEGE_NAME }}. All rights reserved.</p>
+            <p>Result History Management v1.0</p>
+        </div>
+    </footer>
+    
+    <script>
+        // Clear all data function
+        function clearAllData() {
+            if (confirm('⚠️ WARNING: This will permanently delete ALL marksheet records from the database!\n\nAre you absolutely sure you want to continue?')) {
+                if (confirm('🚨 FINAL CONFIRMATION: This action CANNOT be undone!\n\nClick OK to delete all data, or Cancel to abort.')) {
+                    fetch('/clear_all_data', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('✅ ' + data.message);
+                            window.location.reload();
+                        } else {
+                            alert('❌ Error: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        alert('❌ Error clearing data: ' + error);
+                    });
+                }
+            }
+        }
+    </script>
+</body>
+</html>
