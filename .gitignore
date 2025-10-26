@@ -61,4 +61,3 @@ flask_session/
 # Temporary files
 *.tmp
 *.temp
-.vercel
