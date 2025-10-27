@@ -1410,7 +1410,9 @@ def test_db():
 def init_database_setup():
     """One-time database initialization endpoint"""
     try:
+        print("Starting database initialization...")
         init_db()
+        print("Database initialization completed!")
         return """
         <html>
         <head><title>Database Initialized</title></head>
@@ -1426,11 +1428,16 @@ def init_database_setup():
         </html>
         """
     except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Database init error: {error_details}")
         return f"""
         <html>
         <body style="font-family: Arial; padding: 50px; text-align: center;">
             <h1 style="color: red;">❌ Database Initialization Failed</h1>
-            <p>Error: {str(e)}</p>
+            <p><strong>Error:</strong> {str(e)}</p>
+            <pre style="text-align: left; background: #f5f5f5; padding: 20px; overflow: auto;">{error_details}</pre>
+            <p><a href="/test-db">Test Database Connection</a></p>
         </body>
         </html>
         """, 500
