@@ -50,9 +50,16 @@ def init_db():
         if connection:
             cursor = connection.cursor()
             
+            # Drop all tables first (in correct order due to foreign keys)
+            cursor.execute('SET FOREIGN_KEY_CHECKS = 0')
+            cursor.execute('DROP TABLE IF EXISTS subjects')
+            cursor.execute('DROP TABLE IF EXISTS students')
+            cursor.execute('DROP TABLE IF EXISTS users')
+            cursor.execute('SET FOREIGN_KEY_CHECKS = 1')
+            
             # Create students table
             cursor.execute('''
-                CREATE TABLE IF NOT EXISTS students (
+                CREATE TABLE students (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     name VARCHAR(255) NOT NULL,
                     roll_no VARCHAR(50) UNIQUE NOT NULL,
@@ -72,7 +79,7 @@ def init_db():
             
             # Create subjects table
             cursor.execute('''
-                CREATE TABLE IF NOT EXISTS subjects (
+                CREATE TABLE subjects (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     student_id INT,
                     subject_name VARCHAR(255) NOT NULL,
@@ -82,9 +89,6 @@ def init_db():
                     FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
                 )
             ''')
-            
-            # Drop and recreate users table to fix column issues
-            cursor.execute('DROP TABLE IF EXISTS users')
             
             # Create users table with correct columns
             cursor.execute('''
