@@ -36,74 +36,79 @@ def get_db_connection():
 
 # Initialize database
 def init_db():
-    connection = get_db_connection()
-    if connection:
-        cursor = connection.cursor()
-        
-        # Create students table
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS students (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                name VARCHAR(255) NOT NULL,
-                roll_no VARCHAR(50) UNIQUE NOT NULL,
-                branch VARCHAR(100) NOT NULL,
-                semester VARCHAR(20) NOT NULL,
-                exam_type VARCHAR(50) NOT NULL,
-                total_marks INT NOT NULL,
-                max_marks INT NOT NULL,
-                percentage DECIMAL(5,2) NOT NULL,
-                grade VARCHAR(10) NOT NULL,
-                remarks TEXT,
-                date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                class_teacher VARCHAR(255),
-                principal VARCHAR(255)
-            )
-        ''')
-        
-        # Create subjects table
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS subjects (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                student_id INT,
-                subject_name VARCHAR(255) NOT NULL,
-                marks INT NOT NULL,
-                max_marks INT NOT NULL,
-                grade VARCHAR(10),
-                FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
-            )
-        ''')
-        
-        # Create users table
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS users (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                username VARCHAR(100) UNIQUE NOT NULL,
-                password_hash VARCHAR(255) NOT NULL,
-                role VARCHAR(20) NOT NULL DEFAULT 'teacher',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        
-        # Check if role column exists, if not add it
-        cursor.execute("SHOW COLUMNS FROM users LIKE 'role'")
-        role_column_exists = cursor.fetchone()
-        
-        if not role_column_exists:
-            cursor.execute("ALTER TABLE users ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'teacher'")
-        
-        # Create default admin user
-        admin_password = generate_password_hash('admin123')
-        teacher_password = generate_password_hash('teacher123')
-        
-        cursor.execute('''
-            INSERT IGNORE INTO users (username, password_hash, role) 
-            VALUES ('admin', %s, 'admin'), ('teacher', %s, 'teacher')
-        ''', (admin_password, teacher_password))
-        
-        connection.commit()
-        cursor.close()
-        connection.close()
-        print("Database initialized successfully!")
+    try:
+        connection = get_db_connection()
+        if connection:
+            cursor = connection.cursor()
+            
+            # Create students table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS students (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    name VARCHAR(255) NOT NULL,
+                    roll_no VARCHAR(50) UNIQUE NOT NULL,
+                    branch VARCHAR(100) NOT NULL,
+                    semester VARCHAR(20) NOT NULL,
+                    exam_type VARCHAR(50) NOT NULL,
+                    total_marks INT NOT NULL,
+                    max_marks INT NOT NULL,
+                    percentage DECIMAL(5,2) NOT NULL,
+                    grade VARCHAR(10) NOT NULL,
+                    remarks TEXT,
+                    date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    class_teacher VARCHAR(255),
+                    principal VARCHAR(255)
+                )
+            ''')
+            
+            # Create subjects table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS subjects (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    student_id INT,
+                    subject_name VARCHAR(255) NOT NULL,
+                    marks INT NOT NULL,
+                    max_marks INT NOT NULL,
+                    grade VARCHAR(10),
+                    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+                )
+            ''')
+            
+            # Create users table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS users (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    username VARCHAR(100) UNIQUE NOT NULL,
+                    password_hash VARCHAR(255) NOT NULL,
+                    role VARCHAR(20) NOT NULL DEFAULT 'teacher',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            # Check if role column exists, if not add it
+            cursor.execute("SHOW COLUMNS FROM users LIKE 'role'")
+            role_column_exists = cursor.fetchone()
+            
+            if not role_column_exists:
+                cursor.execute("ALTER TABLE users ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'teacher'")
+            
+            # Create default admin user
+            admin_password = generate_password_hash('admin123')
+            teacher_password = generate_password_hash('teacher123')
+            
+            cursor.execute('''
+                INSERT IGNORE INTO users (username, password_hash, role) 
+                VALUES ('admin', %s, 'admin'), ('teacher', %s, 'teacher')
+            ''', (admin_password, teacher_password))
+            
+            connection.commit()
+            cursor.close()
+            connection.close()
+            print("Database initialized successfully!")
+        else:
+            print("Could not connect to database")
+    except Exception as e:
+        print(f"Error initializing database: {e}")
 
 # Helper functions
 def allowed_file(filename):
@@ -1374,5 +1379,12 @@ def clear_all_data():
 # Helper function for grade calculation (if not already exists)
 
 if __name__ == '__main__':
+    # Only initialize DB in development mode
     init_db()
     app.run(debug=True, host='0.0.0.0', port=5001)
+else:
+    # In production (gunicorn), try to initialize DB but don't crash if it fails
+    try:
+        init_db()
+    except Exception as e:
+        print(f"Warning: Could not initialize database on startup: {e}")
