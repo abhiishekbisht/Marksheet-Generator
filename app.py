@@ -83,9 +83,12 @@ def init_db():
                 )
             ''')
             
-            # Create users table
+            # Drop and recreate users table to fix column issues
+            cursor.execute('DROP TABLE IF EXISTS users')
+            
+            # Create users table with correct columns
             cursor.execute('''
-                CREATE TABLE IF NOT EXISTS users (
+                CREATE TABLE users (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     username VARCHAR(100) UNIQUE NOT NULL,
                     password_hash VARCHAR(255) NOT NULL,
@@ -93,13 +96,6 @@ def init_db():
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
-            
-            # Check if role column exists, if not add it
-            cursor.execute("SHOW COLUMNS FROM users LIKE 'role'")
-            role_column_exists = cursor.fetchone()
-            
-            if not role_column_exists:
-                cursor.execute("ALTER TABLE users ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'teacher'")
             
             # Create default admin user
             admin_password = generate_password_hash('admin123')
