@@ -756,7 +756,7 @@ def dashboard():
         consistency_score = min(95, max(60, 100 - (performance_stats['highest_score'] - performance_stats['lowest_score']) / 2)) if performance_stats['highest_score'] else 85
         
         cursor.close()
-        connection.close()
+        connection
         
         return render_template('dashboard.html',
                              total_students=total_students,
@@ -1375,6 +1375,23 @@ def clear_all_data():
             
     except Exception as e:
         return jsonify({'success': False, 'message': f'Error: {str(e)}'})
+
+# Test endpoint
+@app.route('/test-db')
+def test_db():
+    try:
+        conn = get_db_connection()
+        if conn:
+            cursor = conn.cursor()
+            cursor.execute("SHOW TABLES")
+            tables = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            return f"<h1>Connected!</h1><p>Tables: {tables}</p><a href='/init-database-setup-2024'>Init DB</a>"
+        else:
+            return "<h1>Cannot connect</h1>"
+    except Exception as e:
+        return f"<h1>Error: {str(e)}</h1>"
 
 # Special endpoint for database initialization (one-time use)
 @app.route('/init-database-setup-2024', methods=['GET'])
