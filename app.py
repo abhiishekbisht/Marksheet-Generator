@@ -18,7 +18,16 @@ import pandas as pd
 from config import Config
 
 app = Flask(__name__)
-app.config.from_object(Config)
+try:
+    app.config.from_object(Config)
+except Exception as e:
+    print(f"Config error: {e}")
+    app.config['SECRET_KEY'] = 'fallback-secret-key'
+
+# Health check route
+@app.route('/health')
+def health():
+    return "OK", 200
 
 # Database connection
 def get_db_connection():
@@ -133,9 +142,12 @@ def calculate_grade(percentage):
 # Routes
 @app.route('/')
 def index():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    return render_template('index.html')
+    try:
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+        return render_template('index.html')
+    except Exception as e:
+        return f"Error: {str(e)}", 500
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
