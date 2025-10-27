@@ -1371,7 +1371,35 @@ def clear_all_data():
     except Exception as e:
         return jsonify({'success': False, 'message': f'Error: {str(e)}'})
 
-# Helper function for grade calculation (if not already exists)
+# Special endpoint for database initialization (one-time use)
+@app.route('/init-database-setup-2024', methods=['GET'])
+def init_database_setup():
+    """One-time database initialization endpoint"""
+    try:
+        init_db()
+        return """
+        <html>
+        <head><title>Database Initialized</title></head>
+        <body style="font-family: Arial; padding: 50px; text-align: center;">
+            <h1 style="color: green;">✅ Database Initialized Successfully!</h1>
+            <p>Your database tables have been created and default users are set up.</p>
+            <h3>Login Credentials:</h3>
+            <p><strong>Admin:</strong> username: admin | password: admin123</p>
+            <p><strong>Teacher:</strong> username: teacher | password: teacher123</p>
+            <br>
+            <a href="/login" style="background: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Go to Login Page</a>
+        </body>
+        </html>
+        """
+    except Exception as e:
+        return f"""
+        <html>
+        <body style="font-family: Arial; padding: 50px; text-align: center;">
+            <h1 style="color: red;">❌ Database Initialization Failed</h1>
+            <p>Error: {str(e)}</p>
+        </body>
+        </html>
+        """, 500
 
 if __name__ == '__main__':
     init_db()
